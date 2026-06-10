@@ -44,12 +44,28 @@ object AsignacionAulas {
   def idAula(a: Aula): String = a._1
   def capAula(a: Aula): Int   = a._2
 
-  // Implementaciones (versión de tu compañero con recursión explícita)
-
-
+  /**
+   * Determina si dos cursos se traslapan en el tiempo.
+   *
+   * Dos cursos se consideran solapados cuando existe al menos
+   * un intervalo de tiempo en común entre ellos.
+   *
+   * Esta función es la base para detectar choques de horario
+   * cuando dos cursos son asignados a la misma aula.
+   */
   def solapan(c1: Curso, c2: Curso): Boolean =
     iniCurso(c1) < finCurso(c2) && iniCurso(c2) < finCurso(c1)
 
+  /**
+   * Calcula la cantidad total de choques de horario.
+   *
+   * Un choque ocurre cuando dos cursos:
+   * - Están asignados a la misma aula.
+   * - Tienen horarios que se traslapan.
+   *
+   * La función recorre todas las parejas posibles de cursos
+   * utilizando recursión para contar los choques encontrados.
+   */
   def choques(cursos: Cursos, a: Asignacion): Int = {
     val n = cursos.length
     def choquesConI(i: Int, j: Int): Int = {
@@ -66,12 +82,27 @@ object AsignacionAulas {
     recorre(0)
   }
 
+  /**
+   * Calcula cuántos cursos fueron asignados a aulas cuya capacidad
+   * es insuficiente para la cantidad de estudiantes inscritos.
+   *
+   * Cada vez que la capacidad del aula es menor que la cantidad
+   * de estudiantes del curso, se incrementa el contador.
+   */
   def capacidadFallida(cursos: Cursos, aulas: Aulas, a: Asignacion): Int =
     cursos.indices.foldLeft(0) { (acc, i) =>
       if (a(i) >= 0 && capAula(aulas(a(i))) < estCurso(cursos(i))) acc + 1
       else acc
     }
 
+  /**
+   * Calcula el desperdicio total de capacidad.
+   *
+   * El desperdicio corresponde a los puestos vacíos que quedan
+   * cuando un aula tiene más capacidad que estudiantes.
+   *
+   * Se suma el exceso de capacidad de cada curso asignado.
+   */
   def desperdicio(cursos: Cursos, aulas: Aulas, a: Asignacion): Int =
     cursos.indices.foldLeft(0) { (acc, i) =>
       if (a(i) >= 0) {
@@ -80,6 +111,16 @@ object AsignacionAulas {
       } else acc
     }
 
+  /**
+   * Calcula el costo de movilidad entre aulas.
+   *
+   * Primero ordena los cursos según su hora de inicio.
+   * Luego suma las distancias recorridas entre las aulas
+   * de cursos consecutivos.
+   *
+   * Mientras mayor sea la distancia entre aulas,
+   * mayor será el costo de movilidad.
+   */
   def movilidad(cursos: Cursos, aulas: Aulas, d: Distancias,
                 a: Asignacion): Int = {
     val asignados = cursos.indices
@@ -97,6 +138,18 @@ object AsignacionAulas {
     sumaDistancias(0, 0)
   }
 
+  /**
+   * Calcula el costo total de una asignación.
+   *
+   * El costo se obtiene combinando cuatro criterios:
+   * - Choques de horario.
+   * - Capacidad insuficiente.
+   * - Desperdicio de capacidad.
+   * - Movilidad entre aulas.
+   *
+   * Cada criterio se multiplica por un peso definido
+   * para reflejar su importancia dentro del problema.
+   */
   def costoAsignacion(cursos: Cursos, aulas: Aulas, d: Distancias,
                       a: Asignacion, w: Pesos): Int = {
     val ch = choques(cursos, a)
@@ -106,6 +159,17 @@ object AsignacionAulas {
     w._1 * ch + w._2 * cf + w._3 * de + w._4 * mv
   }
 
+  /**
+   * Genera todas las asignaciones posibles de aulas para los cursos.
+   *
+   * Utiliza recursión para construir todas las combinaciones.
+   *
+   * Cada posición del vector representa un curso y el valor
+   * almacenado corresponde al aula asignada.
+   *
+   * El número total de asignaciones generadas es m**n,
+   * donde n es la cantidad de cursos y m la cantidad de aulas.
+   */
   def generarAsignaciones(n: Int, m: Int): Vector[Asignacion] = {
     if (n == 0) Vector(Vector.empty[Int])
     else {
@@ -116,6 +180,18 @@ object AsignacionAulas {
     }
   }
 
+  /**
+   * Busca la asignación con el menor costo posible.
+   *
+   * Primero genera todas las asignaciones candidatas.
+   * Después evalúa cada una utilizando la función de costo.
+   *
+   * Finalmente conserva la asignación que produzca
+   * el menor costo total y la devuelve junto con dicho costo.
+   *
+   * Esta función garantiza encontrar la solución óptima
+   * porque analiza todas las posibilidades existentes.
+   */
   def asignacionOptima(cursos: Cursos, aulas: Aulas, d: Distancias,
                        w: Pesos): (Asignacion, Int) = {
     val candidatas = generarAsignaciones(cursos.length, aulas.length)
