@@ -16,10 +16,12 @@ $$\text{solapan}(c_1, c_2) \iff \text{ini}_{c_1} < \text{fin}_{c_2} \;\land\; \t
 ## 2. `choques` — recursión lineal anidada
 
 ```scala
-def choques(cursos, a):
-  def choquesConI(i, j): ...   // recorre j de i+1 hasta n-1
-  def recorre(i):         ...   // recorre i de 0 hasta n-2
+def choques(cursos: Cursos, a: Asignacion): Int = {
+  def choquesConI(i: Int, j: Int): Int = ...
+  def recorre(i: Int): Int = ...
+
   recorre(0)
+}
 ```
 
 **Ejemplo:** `cursos = [M01(4,8,25), M02(6,10,30), M03(12,16,20)]`, `a = [0,0,1]`
