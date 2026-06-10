@@ -1,191 +1,139 @@
-# Ejemplo informe de corrección
+# Informe de corrección — Proyecto Final
 
-**Fundamentos de Programación Funcional y Concurrente**  
-Documento realizado por el docente Juan Francisco Díaz.
-
----
-
-## Argumentación de corrección de programas
-
-### Argumentando sobre corrección de programas recursivos
-
-Sea $f : A \to B$ una función, y $A$ un conjunto definido recursivamente (recordar definición de matemáticas discretas I), como por ejemplo los naturales o las listas.
-
-Sea $P_f$ un programa recursivo (lineal o en árbol) desarrollado en Scala (o en cualquier lenguaje de programación) hecho para calcular $f$:
-
-```scala
-def Pf(a: A): B = { // Pf recibe a de tipo A, y devuelve f(a) de tipo B
-  ...
-}
-```
-
-¿Cómo argumentar que \$P_f(a)\$ siempre devuelve \$f(a)\$ como respuesta? Es decir, ¿cómo argumentar que \$P_f\$ es correcto con respecto a su especificación?
-
-La respuesta es sencilla, demostrando el siguiente teorema:
-
-$$
-\forall a \in A : P_f(a) == f(a)
-$$
-
-Cuando uno tiene que demostrar que algo se cumple para todos los elementos de un conjunto definido recursivamente, es natural usar **inducción estructural**.
-
-En términos prácticos, esto significa demostrar que:
-
-- Para cada valor básico \$a\$ de \$A\$, se tiene que \$P_f(a) == f(a)\$.
-- Para cada valor \$a \in A\$ construido recursivamente a partir de otro(s) valor(es) \$a' \in A\$, se tiene que \$P_f(a') == f(a') \rightarrow P_f(a) == f(a)\$ (hipótesis de inducción).
+**Curso:** Fundamentos de Programación Funcional y Concurrente  
+**Integrantes:** (completar con nombres, códigos y correos)
 
 ---
 
-#### Ejemplo: Factorial Recursivo
+## Marco teórico
 
-Sea \$f : \mathbb{N} \to \mathbb{N}\$ la función que calcula el factorial de un número natural, \$f(n) = n!\$.
+Para argumentar que un programa $P_f$ es correcto respecto a su especificación $f$, demostramos:
 
-Programa en Scala:
+$$\forall x \in \text{Dom}(f) : P_f(x) = f(x)$$
 
-```scala
-def Pf(n: Int): Int = {
-  if (n == 0) 1 else n * Pf(n - 1)
-}
-```
-
-Queremos demostrar que:
-
-$$
-\forall n \in \mathbb{N} : P_f(n) == n!
-$$
-
-- **Caso base**: \$n = 0\$
-
-$$
-P_f(0) \to 1 \quad \land \quad f(0) = 0! = 1
-$$
-
-Entonces \$P_f(0) == f(0)\$.
-
-- **Caso inductivo**: \$n = k+1\$, \$k \geq 0\$.
-
-$$
-P_f(k+1) \to (k+1) \cdot P_f(k)
-$$
-
-Usando la hipótesis de inducción:
-
-$$
-\to (k+1) \cdot k! = (k+1)!
-$$
-
-Por lo tanto, \$P_f(k+1) == f(k+1)\$.
-
-**Conclusión**: \$\forall n \in \mathbb{N} : P_f(n) == n!\$
+Para funciones recursivas usamos **inducción estructural**. Para funciones de alto orden como `foldLeft` usamos el **invariante del acumulador**.
 
 ---
 
-#### Ejemplo: El máximo de una lista
+## 1. `solapan`
 
-Sea \$f : \text{List}\[\mathbb{N}] \to \mathbb{N}\$ la función que calcula el máximo de una lista no vacía.
+**Especificación:** $\text{solapan}(c_1, c_2) \iff \text{ini}_{c_1} < \text{fin}_{c_2} \land \text{ini}_{c_2} < \text{fin}_{c_1}$
 
-Programa en Scala:
-
-```scala
-def maxLin(l: List[Int]): Int = {
-  if (l.tail.isEmpty) l.head
-  else math.max(maxLin(l.tail), l.head)
-}
-```
-
-Queremos demostrar que:
-
-$$
-\forall n \in \mathbb{N} \setminus \{0\} :
-P_f(\text{List}(a_1, \ldots, a_n)) == f(\text{List}(a_1, \ldots, a_n))
-$$
-
-- **Caso base**: \$n=1\$.
-
-$$
-P_f(\text{List}(a_1)) \to a_1 \quad \land \quad f(\text{List}(a_1)) = a_1
-$$
-
-- **Caso inductivo**: \$n=k+1\$.
-
-$$
-P_f(L) \to \text{math.max}(P_f(\text{List}(a_2, \ldots, a_{k+1})), a_1)
-$$
-
-Dependiendo del mayor entre \$a_1\$ y \$b\$ (el máximo del resto de la lista), se cumple que \$P_f(L) == f(L)\$.
-
-**Conclusión**:
-
-$$
-\forall n \in \mathbb{N} \setminus \{0\} : P_f(\text{List}(a_1, \ldots, a_n)) == f(\text{List}(a_1, \ldots, a_n))
-$$
+**Corrección:** la implementación aplica directamente la condición. Dos intervalos $[a,b)$ y $[c,d)$ se solapan si y solo si $a < d \land c < b$. La implementación es correcta por definición. $\blacksquare$
 
 ---
 
-### Argumentando sobre corrección de programas iterativos
+## 2. `choques`
 
-Para argumentar la corrección de programas iterativos, se debe formalizar cómo es la iteración:
+**Especificación:**
 
-- Representación de un estado \$s\$.
-- Estado inicial \$s_0\$.
-- Estado final \$s_f\$.
-- Invariante de la iteración \$\text{Inv}(s)\$.
-- Transformación de estados \$\text{transformar}(s)\$.
+$$\text{choques}(cs, a) = |\{(i,j) \mid 0 \leq i < j < n,\; a_i = a_j \geq 0,\; \text{solapan}(cs_i, cs_j)\}|$$
 
-Programa iterativo genérico:
+**Corrección de `choquesConI(i, j)`:** por inducción sobre $n - j$.
 
-```scala
-def Pf(a: A): B = {
-  def Pf_iter(s: Estado): B =
-    if (esFinal(s)) respuesta(s) else Pf_iter(transformar(s))
-  Pf_iter(s0)
-}
-```
+- **Caso base** $j \geq n$: retorna 0. El conjunto de pares con segundo índice $\geq n$ es vacío. ✓
+- **Caso inductivo**: supongamos que `choquesConI(i, j+1)` cuenta correctamente los pares $(i, k)$ con $k \geq j+1$. Entonces:
 
----
+$$\text{choquesConI}(i, j) = [a_i = a_j \geq 0 \land \text{solapan}(i,j)] + \text{choquesConI}(i, j+1)$$
 
-#### Ejemplo: Factorial Iterativo
+que cuenta exactamente los pares $(i, k)$ con $k \geq j$. ✓
 
-```scala
-def Pf(n: Int): Int = {
-  def Pf_iter(i: Int, n: Int, ac: Int): Int =
-    if (i > n) ac else Pf_iter(i + 1, n, i * ac)
-  Pf_iter(1, n, 1)
-}
-```
+**Corrección de `recorre(i)`:** por inducción sobre $n - 1 - i$.
 
-- Estado \$s = (i, n, ac)\$
-- Estado inicial \$s_0 = (1, n, 1)\$
-- Estado final: \$i = n+1\$
-- Invariante: \$\text{Inv}(i,n,ac) \equiv i \leq n+1 \land ac = (i-1)!\$
-- Transformación: \$(i, n, ac) \to (i+1, n, i \cdot ac)\$
+- **Caso base** $i \geq n-1$: retorna 0. No quedan pares con primer índice $\geq n-1$. ✓
+- **Caso inductivo**: supongamos que `recorre(i+1)` cuenta todos los pares $(k,l)$ con $k \geq i+1$. Entonces:
 
-Por inducción sobre la iteración, se demuestra que al llegar a \$s_f\$, \$ac = n!\$.
+$$\text{recorre}(i) = \text{choquesConI}(i, i+1) + \text{recorre}(i+1)$$
+
+que cuenta todos los pares $(i,j)$ con $j > i$, más todos los pares $(k,l)$ con $k > i$. Esto cubre todos los pares $(k,l)$ con $k \geq i$ y $l > k$. ✓ $\blacksquare$
 
 ---
 
-#### Ejemplo: El máximo de una lista
+## 3. `capacidadFallida`
 
-```scala
-def maxIt(l: List[Int]): Int = {
-  def maxAux(max: Int, l: List[Int]): Int = {
-    if (l.isEmpty) max
-    else maxAux(math.max(max, l.head), l.tail)
-  }
-  maxAux(l.head, l.tail)
-}
-```
+**Especificación:**
 
-- Estado \$s = (max, l)\$
-- Estado inicial \$s_0 = (a_1, \text{List}(a_2, \ldots, a_k))\$
-- Estado final: \$l = \text{List}()\$
-- Invariante: \$\text{Inv}(max, l) \equiv max = f(\text{prefijo})\$
-- Transformación: \$(max, l) \to (\text{math.max}(max, l.head), l.tail)\$
+$$\text{CF}(cs, as, a) = |\{i \mid a_i \geq 0 \land \text{cap}(as_{a_i}) < \text{est}(cs_i)\}|$$
 
-Por inducción, al llegar al estado final, \$max = f(L)\$.
+**Corrección:** `foldLeft` con acumulador `acc` mantiene el invariante:
 
-**Conclusión**:
+$$\text{Inv}(k, \text{acc}) \equiv \text{acc} = |\{i < k \mid a_i \geq 0 \land \text{cap}(as_{a_i}) < \text{est}(cs_i)\}|$$
 
-$$
-P_f(L) == f(L)
-$$
+- **Inicio:** $k=0$, $\text{acc}=0$. $\text{Inv}(0, 0)$: conjunto vacío $\Rightarrow 0$. ✓
+- **Paso:** si $\text{Inv}(k, \text{acc})$ y se procesa $k$: si falla capacidad, $\text{acc}+1$; si no, $\text{acc}$. En ambos casos $\text{Inv}(k+1, \text{acc}')$. ✓
+- **Final:** $\text{Inv}(n, \text{acc})$ implica $\text{acc} = \text{CF}(cs, as, a)$. ✓ $\blacksquare$
+
+---
+
+## 4. `desperdicio`
+
+**Especificación:**
+
+$$\text{DE}(cs, as, a) = \sum_{\substack{i=0 \\ a_i \geq 0}}^{n-1} \max(\text{cap}(as_{a_i}) - \text{est}(cs_i),\; 0)$$
+
+**Corrección:** mismo argumento de invariante de `foldLeft`:
+
+$$\text{Inv}(k, \text{acc}) \equiv \text{acc} = \sum_{\substack{i < k \\ a_i \geq 0}} \max(\text{cap}(as_{a_i}) - \text{est}(cs_i),\; 0)$$
+
+El paso agrega `diff` si `diff >= 0`, 0 si no, preservando el invariante. $\blacksquare$
+
+---
+
+## 5. `movilidad`
+
+**Especificación:** sea $\sigma$ el orden de los índices asignados por hora de inicio:
+
+$$\text{MV}(cs, as, d, a) = \sum_{k=0}^{|\sigma|-2} d[a_{\sigma_k}][a_{\sigma_{k+1}}]$$
+
+**Corrección de `sumaDistancias(idx, acc)`:** invariante de recursión de cola:
+
+$$\text{Inv}(\text{idx}, \text{acc}) \equiv \text{acc} = \sum_{k=0}^{\text{idx}-1} d[a_{\sigma_k}][a_{\sigma_{k+1}}]$$
+
+- **Inicio:** $\text{idx}=0$, $\text{acc}=0$. La suma vacía es 0. ✓
+- **Paso:** $\text{Inv}(\text{idx}, \text{acc}) \Rightarrow \text{Inv}(\text{idx}+1, \text{acc} + d[\ldots][\ldots])$. ✓
+- **Final:** cuando $\text{idx} \geq |\sigma|-1$, retorna $\text{acc} = \text{MV}$. ✓ $\blacksquare$
+
+---
+
+## 6. `costoAsignacion`
+
+**Especificación:** $CT = w_1 \cdot CH + w_2 \cdot CF + w_3 \cdot DE + w_4 \cdot MV$
+
+**Corrección:** directa por sustitución, usando la corrección de `choques`, `capacidadFallida`, `desperdicio` y `movilidad`. $\blacksquare$
+
+---
+
+## 7. `generarAsignaciones`
+
+**Especificación:** $\text{gen}(n, m) = \{0,\ldots,m-1\}^n$ como vector de vectores.
+
+**Corrección por inducción sobre $n$:**
+
+- **Caso base** $n=0$: retorna $\{[]\}$, que es $\{0,\ldots,m-1\}^0 = \{[]\}$. ✓
+- **Caso inductivo:** supongamos que $\text{gen}(n-1, m) = \{0,\ldots,m-1\}^{n-1}$. Entonces:
+
+$$\text{gen}(n, m) = \bigcup_{j=0}^{m-1} \{j\} \times \{0,\ldots,m-1\}^{n-1} = \{0,\ldots,m-1\}^n$$
+
+El `flatMap` sobre $j \in \{0,\ldots,m-1\}$ y el `map` que prepend $j$ construyen exactamente este conjunto. ✓
+
+**Tamaño:** $|\text{gen}(n,m)| = m^n$, pues $|\text{gen}(0,m)| = 1$ y $|\text{gen}(n,m)| = m \cdot |\text{gen}(n-1,m)|$. $\blacksquare$
+
+---
+
+## 8. `asignacionOptima`
+
+**Especificación:** $\text{opt}(cs, as, d, w) = \arg\min_{a \in \text{gen}(n,m)} CT(a)$
+
+**Corrección de `buscarMinimo(idx, mejorAsig, mejorCosto)`:** invariante de recursión de cola:
+
+$$\text{Inv}(\text{idx}, \text{mA}, \text{mC}) \equiv \text{mA} = \arg\min_{k < \text{idx}} CT(\text{cand}_k) \;\land\; \text{mC} = \min_{k < \text{idx}} CT(\text{cand}_k)$$
+
+- **Inicio:** $\text{idx}=1$, $\text{mA}=\text{cand}_0$, $\text{mC}=CT(\text{cand}_0)$. ✓
+- **Paso:** si $CT(\text{cand}_{\text{idx}}) < \text{mC}$, actualiza ambos; si no, preserva. En ambos casos $\text{Inv}(\text{idx}+1, \text{mA}', \text{mC}')$. ✓
+- **Final:** $\text{Inv}(|\text{cand}|, \text{mA}, \text{mC})$ implica que $\text{mA}$ es el mínimo global. ✓ $\blacksquare$
+
+---
+
+## Casos de prueba adicionales
+
+Los casos de prueba están en `AsignacionAulasTest.scala` y `AsignacionAulasParTest.scala`. Se incluyen al menos 5 casos por función, validando: solapamiento exacto en los bordes, asignaciones con y sin choques, capacidad justa vs. insuficiente, movilidad con un solo curso, y la optimalidad del mínimo encontrado.

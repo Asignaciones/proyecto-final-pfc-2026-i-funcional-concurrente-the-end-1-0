@@ -4,27 +4,15 @@ import scala.util.Random
 
 object AsignacionAulas {
 
-  // Un curso es (id, horaInicio, horaFin, numEstudiantes).
-  // Las horas son bloques de 30 min desde las 6:00 a.m. (p. ej. ini=4 → 8:00 a.m.).
-  type Curso = (String, Int, Int, Int)
-  type Cursos = Vector[Curso]
-
-  // Un aula es (id, capacidad).
-  type Aula = (String, Int)
-  type Aulas = Vector[Aula]
-
-  // Asignacion(i) = j significa que el curso i se dicta en el aula j; -1 = sin asignar.
+  type Curso      = (String, Int, Int, Int)
+  type Cursos     = Vector[Curso]
+  type Aula       = (String, Int)
+  type Aulas      = Vector[Aula]
   type Asignacion = Vector[Int]
-
-  // Matriz simétrica de distancias entre aulas.
   type Distancias = Vector[Vector[Int]]
+  type Pesos      = (Int, Int, Int, Int)
 
-  // Pesos: (w_CH, w_CF, w_DE, w_MV).
-  type Pesos = (Int, Int, Int, Int)
-
-  // ---------------------------------------------------------------------------
-  // Funciones de generación (ya implementadas — NO MODIFICAR)
-  // ---------------------------------------------------------------------------
+  // Generación (NO MODIFICAR)
 
   val random = new Random()
 
@@ -46,61 +34,100 @@ object AsignacionAulas {
       else v(j)(i))
   }
 
-  // ---------------------------------------------------------------------------
-  // Funciones de acceso (ya implementadas — NO MODIFICAR)
-  // ---------------------------------------------------------------------------
+  // Accesores (NO MODIFICAR)
 
   def idCurso(c: Curso): String = c._1
   def iniCurso(c: Curso): Int   = c._2
   def finCurso(c: Curso): Int   = c._3
   def estCurso(c: Curso): Int   = c._4
 
-  def idAula(a: Aula): String   = a._1
-  def capAula(a: Aula): Int     = a._2
+  def idAula(a: Aula): String = a._1
+  def capAula(a: Aula): Int   = a._2
 
-  // ---------------------------------------------------------------------------
-  // Funciones a implementar
-  // ---------------------------------------------------------------------------
+  // Implementaciones (versión de tu compañero con recursión explícita)
 
-  /** Devuelve true sii los intervalos [ini1, fin1) y [ini2, fin2) se traslapan. */
-  def solapan(c1: Curso, c2: Curso): Boolean = ???
 
-  /**
-   * Número de pares (i, j) con i < j tales que a(i) == a(j) >= 0
-   * y los cursos i y j se solapan.
-   */
-  def choques(cursos: Cursos, a: Asignacion): Int = ???
+  def solapan(c1: Curso, c2: Curso): Boolean =
+    iniCurso(c1) < finCurso(c2) && iniCurso(c2) < finCurso(c1)
 
-  /** Cantidad de cursos cuya aula asignada tiene capacidad menor al número de estudiantes. */
-  def capacidadFallida(cursos: Cursos, aulas: Aulas, a: Asignacion): Int = ???
+  def choques(cursos: Cursos, a: Asignacion): Int = {
+    val n = cursos.length
+    def choquesConI(i: Int, j: Int): Int = {
+      if (j >= n) 0
+      else {
+        val hayChoque = a(i) >= 0 && a(i) == a(j) && solapan(cursos(i), cursos(j))
+        (if (hayChoque) 1 else 0) + choquesConI(i, j + 1)
+      }
+    }
+    def recorre(i: Int): Int = {
+      if (i >= n - 1) 0
+      else choquesConI(i, i + 1) + recorre(i + 1)
+    }
+    recorre(0)
+  }
 
-  /**
-   * Suma de (cap(aula_i) - est(curso_i)) para los cursos asignados
-   * con capacidad suficiente.
-   */
-  def desperdicio(cursos: Cursos, aulas: Aulas, a: Asignacion): Int = ???
+  def capacidadFallida(cursos: Cursos, aulas: Aulas, a: Asignacion): Int =
+    cursos.indices.foldLeft(0) { (acc, i) =>
+      if (a(i) >= 0 && capAula(aulas(a(i))) < estCurso(cursos(i))) acc + 1
+      else acc
+    }
 
-  /**
-   * Ordena los cursos asignados por hora de inicio y suma las distancias
-   * entre aulas de cursos consecutivos.
-   */
+  def desperdicio(cursos: Cursos, aulas: Aulas, a: Asignacion): Int =
+    cursos.indices.foldLeft(0) { (acc, i) =>
+      if (a(i) >= 0) {
+        val diff = capAula(aulas(a(i))) - estCurso(cursos(i))
+        if (diff >= 0) acc + diff else acc
+      } else acc
+    }
+
   def movilidad(cursos: Cursos, aulas: Aulas, d: Distancias,
-                a: Asignacion): Int = ???
+                a: Asignacion): Int = {
+    val asignados = cursos.indices
+      .filter(i => a(i) >= 0)
+      .sortBy(i => iniCurso(cursos(i)))
 
-  /** Costo total: w_CH * CH + w_CF * CF + w_DE * DE + w_MV * MV. */
+    def sumaDistancias(idx: Int, acc: Int): Int = {
+      if (idx >= asignados.length - 1) acc
+      else {
+        val aulaActual    = a(asignados(idx))
+        val aulaSiguiente = a(asignados(idx + 1))
+        sumaDistancias(idx + 1, acc + d(aulaActual)(aulaSiguiente))
+      }
+    }
+    sumaDistancias(0, 0)
+  }
+
   def costoAsignacion(cursos: Cursos, aulas: Aulas, d: Distancias,
-                      a: Asignacion, w: Pesos): Int = ???
+                      a: Asignacion, w: Pesos): Int = {
+    val ch = choques(cursos, a)
+    val cf = capacidadFallida(cursos, aulas, a)
+    val de = desperdicio(cursos, aulas, a)
+    val mv = movilidad(cursos, aulas, d, a)
+    w._1 * ch + w._2 * cf + w._3 * de + w._4 * mv
+  }
 
-  /**
-   * Genera todas las asignaciones completas posibles: vectores en {0,..,m-1}^n.
-   * El tamaño del resultado es m^n.
-   */
-  def generarAsignaciones(n: Int, m: Int): Vector[Asignacion] = ???
+  def generarAsignaciones(n: Int, m: Int): Vector[Asignacion] = {
+    if (n == 0) Vector(Vector.empty[Int])
+    else {
+      val subAsignaciones = generarAsignaciones(n - 1, m)
+      (0 until m).toVector.flatMap { j =>
+        subAsignaciones.map(sub => j +: sub)
+      }
+    }
+  }
 
-  /**
-   * Devuelve la asignación de mínimo costo y su costo.
-   * Usa generarAsignaciones para explorar el espacio.
-   */
   def asignacionOptima(cursos: Cursos, aulas: Aulas, d: Distancias,
-                       w: Pesos): (Asignacion, Int) = ???
+                       w: Pesos): (Asignacion, Int) = {
+    val candidatas = generarAsignaciones(cursos.length, aulas.length)
+    def buscarMinimo(idx: Int, mejorAsig: Asignacion, mejorCosto: Int): (Asignacion, Int) = {
+      if (idx >= candidatas.length) (mejorAsig, mejorCosto)
+      else {
+        val costo = costoAsignacion(cursos, aulas, d, candidatas(idx), w)
+        if (costo < mejorCosto) buscarMinimo(idx + 1, candidatas(idx), costo)
+        else                    buscarMinimo(idx + 1, mejorAsig, mejorCosto)
+      }
+    }
+    val primerCosto = costoAsignacion(cursos, aulas, d, candidatas(0), w)
+    buscarMinimo(1, candidatas(0), primerCosto)
+  }
 }
