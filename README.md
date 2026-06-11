@@ -12,9 +12,10 @@
 
 | Nombre completo | Código | Correo institucional |
 |-----------------|--------|----------------------|
-| [Estudiante 1]  |        |                      |
-| [Estudiante 2]  |        |                      |
-| [Estudiante 3]  |        |                      |
+| Juan Diego Montaño  |    2477334    |            juan.diego.montano@correounivalle.edu.co          |
+| Josue David Cocoma  |    2477087    |           josue.cocoma@correounivalle.edu.co           |
+| Kevin Alejandro Marulanda  |    2380697    |           kevin.marulanda@correounivalle.edu.co           |
+
 
 **Obligatorio:** editar esta tabla con los datos reales de todos los integrantes.
 Si un integrante no aparece aquí, su nota individual será 0.0.
